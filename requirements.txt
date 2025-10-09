@@ -1,0 +1,6 @@
+torch
+openai
+pydantic
+whisperx
+pysrt
+pydub

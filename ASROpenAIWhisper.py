@@ -18,8 +18,6 @@ class ASROpenAIWhisper(ASRInterface):
         startTimeSeconds = 0
         transcriptAllLines = []
 
-        count = 0
-
         while not endOfFile:
             # clear the buffer to save memory
             audioBuffer.seek(0)
@@ -60,15 +58,11 @@ class ASROpenAIWhisper(ASRInterface):
                 # no speech detected, move to next audio segment
                 startTimeSeconds = endTimeSeconds
 
-            count += 1
-            if count > 10:
-                break
-
         return transcriptAllLines
 
 
 def chunkAudio24MB(filepath, newFileBuffer, startTimeSeconds):
-    # global filecount
+    logger.info("Generating webm audio")
 
     audio = AudioSegment.from_file(filepath)
     bitrate = 256
@@ -153,6 +147,6 @@ def chunkTranscription(transcription, timeOffsetSeconds):
 
     for phrase in phraseBuffer.phrases:
         logger.info(f"[{phrase.start:.1f} - {phrase.end:.1f}] {phrase.text}")
-    logger.info("---transcription segment end---")
+    logger.info("--- transcription segment end ---")
 
     return phraseBuffer.phrases

@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 
 from openai import OpenAI
@@ -7,26 +8,23 @@ from TranslationInterface import TranslationInterface
 from logger import logger
 
 
-marker = "newSubtitleLine"
-
-def generatePrompt(extraPrompts, phrases, previousContext):
+def generatePrompt(extraPrompts, untranslatedSubs, previousContext):
     # add instructions
     instructions = (
             "You are an expert Japanese to English translator. "
-            # "Please translate the following srt subtitle file. "
-            "Please translate the following lines from a subtitle file. "
-            f"The beginning of each line is marked with [{marker} n] where n is the line number. "
-            # "This marker should not be translated or modified in any way, and should be preserved as-is in the translated text. "
-            "This marker should not be translated or included in the final translation for each line. "
+            "You will be given lines from a subtitle file to translate. "
+            "The beginning of each line is marked with [uuid] where uuid is a unique ID for that line. "
+            "This marker should not be translated or included in the final translation. "
+            "Do not add, remove or merge any subtitle lines. "
+            "It is important that the uuid of the translated line matches the uuid of the original line. "
             "Do not summarise or produce any extra text aside from the translation. "
-            "Do not add, delete or merge any subtitle lines. "
-            # "Only return the translated srt file - do not return any other extra text. "
-            "The subtitles come from a machine generated transcription, and each subtitle line may be a whole sentence or a section of a sentence. "
+            "The subtitles come from a machine generated transcription. "
+            "Each subtitle line may be a whole sentence or a section of a sentence. "
             "There may be some inaccuracies in the Japanese text. "
-            "If the sentence doesn't make sense, it is possible that some words were transcribed incorrectly, so consider if other similar sounding words make sense. "
+            "If the sentence doesn't make sense, it is possible that some words were transcribed incorrectly, "
+            "so consider if other similar sounding words make sense. "
             + extraPrompts
     )
-
     output = [instructions]
 
     # add context from previous translation segment
@@ -40,15 +38,20 @@ def generatePrompt(extraPrompts, phrases, previousContext):
         output.append(context)
 
     # finally add new subtitles to be translated
-    untranslatedSubList = []
-    for i, phrase in enumerate(phrases, start=1):
-        untranslatedSubList.append(f"[{marker} {i}] {phrase.text}")
-    untranslatedSubs = "\n".join(untranslatedSubList)
-
     toTranslate = f"The subtitle lines to translate are as follows:\n\n{untranslatedSubs}"
     output.append(toTranslate)
 
     return "\n\n".join(output)
+
+
+def generateSubsToTranslate(phrases):
+    toTranslateList = []
+    uuidList = [uuid.uuid4().hex[:8] for _ in phrases]
+    for lineID, phrase in zip(uuidList, phrases):
+        toTranslateList.append(f"[{lineID}] {phrase.text}")
+    subsToTranslate = "\n".join(toTranslateList)
+
+    return uuidList, subsToTranslate
 
 
 class TranslationOneShotChatGPT(TranslationInterface):
@@ -62,7 +65,7 @@ class TranslationOneShotChatGPT(TranslationInterface):
         logger.info(f"Beginning ChatGPT oneshot translation. Number of lines to be translated: {len(phrases)}")
 
         class SubtitleLineTranslated(BaseModel):
-            lineNumber: int
+            uuid: str
             translatedText: str
 
         class SubtitleFileTranslated(BaseModel):
@@ -73,9 +76,11 @@ class TranslationOneShotChatGPT(TranslationInterface):
         previousContext = None
 
         for phraseChunk in splitPhrases:
-            translationPrompt = generatePrompt(extraPrompts, phraseChunk, previousContext)
+            uuidList, toTranslate = generateSubsToTranslate(phraseChunk)
+            translationPrompt = generatePrompt(extraPrompts, toTranslate, previousContext)
+
             translationStartTime = datetime.now()
-            logger.info("Beginning section translation")
+            logger.info("--- Beginning section translation ---")
             logger.info(f"Translation prompt:\n{translationPrompt}")
 
             response = self.client.responses.parse(
@@ -88,30 +93,36 @@ class TranslationOneShotChatGPT(TranslationInterface):
                     "content": translationPrompt
                 }],
                 store=False,
-                # service_tier="flex",
+                service_tier="flex",
                 text_format=SubtitleFileTranslated
             )
+            translatedLines = response.output_parsed.subtitleLines
 
-            translatedOutputLines = response.output_parsed.subtitleLines
             translationTime = datetime.now() - translationStartTime
-            subs = "\n".join([f"[{line.lineNumber:03d}] {line.translatedText}" for line in translatedOutputLines])
-            logger.info(f"Received translation, time taken: {translationTime}")
-            logger.info(f"Translated text:\n{subs}")
+            subs = "\n".join([f"[{line.uuid}] {line.translatedText}" for line in translatedLines])
+            logger.info(f"Received translation:\n{subs}")
+            logger.info(f"Time taken: {translationTime}")
             logger.info(f"Token usage:\n{response.usage.model_dump_json(indent=2)}")
 
+            # chatgpt doesn't always follow the prompt, so we must do error checking
             # TODO: handle these errors
-            if len(translatedOutputLines) != len(phraseChunk):
-                raise Exception("Translation failed, total line count mismatch. "
-                                f"Input was {len(phraseChunk)} lines but output was {len(translatedOutputLines)} lines")
+            actualUuidList = [line.uuid for line in translatedLines]
+            for i in range(len(uuidList)):
+                if i >= len(uuidList):
+                    raise Exception("Translation failed, received fewer lines than expected. "
+                                    f"Input was {len(phraseChunk)} lines but output was {len(translatedLines)} lines. "
+                                    f"Line [{uuidList[i]}] is missing")
+                expectedUuid = uuidList[i]
+                actualUuid = actualUuidList[i]
+                if expectedUuid != actualUuid:
+                    raise Exception("Translation failed, line UUID mismatch. "
+                                    f"Input UUID is {expectedUuid} but output UUID is {actualUuid}")
 
-            for i, (phrase, subtitleLine) in enumerate(zip(phraseChunk, translatedOutputLines), 1):
-                if i != subtitleLine.lineNumber:
-                    raise Exception("Translation failed, line number mismatch. "
-                                    f"Input line number is {len(phraseChunk)} but output line number is {len(translatedOutputLines)}")
+            for i, (phrase, subtitleLine) in enumerate(zip(phraseChunk, translatedLines), 1):
                 phrase.translatedText = subtitleLine.translatedText
 
             previousContext = (
                     "\n".join([phrase.text for phrase in phraseChunk[-4:]])
                     + "\n\n"
-                    + "\n".join([line.translatedText for line in translatedOutputLines[-4:]])
+                    + "\n".join([line.translatedText for line in translatedLines[-4:]])
             )

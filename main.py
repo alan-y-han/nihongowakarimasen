@@ -1,23 +1,16 @@
 import pickle
 
+from Config import fromLangCode, inputFile, outputFile, configWhisperPrompt, configTranslationContext, \
+    chatGPTServiceTier
 from TranslationOneShotChatGPT import TranslationOneShotChatGPT
 from ASRFromSrtFile import ASRFromSrtFile
 from ASROpenAIWhisper import ASROpenAIWhisper
 from SubtitleWriter import writeSubtitles
-from prompts import translationContextClarisSeason3, whisperPromptGeneric, translationContextClarisSeason2, \
-    translationContextMizukiNana
-
-folder = "C:/Users/pathtovideofolder/"
-file = "filename"
-fileExtension = ".mp4"
-
-inputFile = folder + file + fileExtension
-outputFile = folder + file
-
 
 if __name__ == '__main__':
     ### speech to text
-    phrases = ASROpenAIWhisper().speechToText(inputFile, whisperPromptGeneric, "ja")
+    phrases = ASROpenAIWhisper().speechToText(inputFile, configWhisperPrompt, fromLangCode)
+    # save transcript to file so we don't have to waste credits re-transcribing it in the future
     with open(f"{outputFile}.pkl", "wb") as f:
         pickle.dump(phrases, f)
         f.close()
@@ -28,9 +21,7 @@ if __name__ == '__main__':
     # phrases = ASRFromSrtFile().speechToText(outputFile + ".srt")
 
     ### text to text translation
-    # TranslationChatGPT().translate(phrases, translationContext, "gpt-5")
-    TranslationOneShotChatGPT().translate(phrases, translationContextClarisSeason3, "gpt-5")
-    # TranslationPassthrough().translate(phrases)
+    TranslationOneShotChatGPT().translate(phrases, configTranslationContext, "gpt-5", chatGPTServiceTier)
 
     ### write output to srt
     writeSubtitles(phrases, outputFile)

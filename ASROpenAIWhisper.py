@@ -4,7 +4,7 @@ from typing import List
 from openai import OpenAI
 from pydub import AudioSegment
 
-from logger import logger
+from Logger import logger
 from ASRInterface import ASRInterface
 from TranscribedPhrase import TranscribedPhrase
 

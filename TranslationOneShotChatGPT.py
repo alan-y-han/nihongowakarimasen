@@ -1,17 +1,19 @@
 import uuid
+from collections import deque
 from datetime import datetime
 
 from openai import OpenAI
 from pydantic import BaseModel
 
+from Config import fromLang, toLang, chatGPTServiceTier
 from TranslationInterface import TranslationInterface
-from logger import logger
+from Logger import logger
 
 
 def generatePrompt(extraPrompts, untranslatedSubs, previousContext):
     # add instructions
     instructions = (
-            "You are an expert Japanese to English translator. "
+            f"You are an expert {fromLang} to {toLang} translator. "
             "You will be given lines from a subtitle file to translate. "
             "The beginning of each line is marked with [uuid] where uuid is a unique ID for that line. "
             "This marker should not be translated or included in the final translation. "
@@ -20,7 +22,7 @@ def generatePrompt(extraPrompts, untranslatedSubs, previousContext):
             "Do not summarise or produce any extra text aside from the translation. "
             "The subtitles come from a machine generated transcription. "
             "Each subtitle line may be a whole sentence or a section of a sentence. "
-            "There may be some inaccuracies in the Japanese text. "
+            f"There may be some inaccuracies in the {fromLang} text. "
             "If the sentence doesn't make sense, it is possible that some words were transcribed incorrectly, "
             "so consider if other similar sounding words make sense. "
             + extraPrompts
@@ -72,7 +74,7 @@ class TranslationOneShotChatGPT(TranslationInterface):
             subtitleLines: list[SubtitleLineTranslated]
 
         chunkSize = 200
-        splitPhrases = [phrases[i:i + chunkSize] for i in range(0, len(phrases), chunkSize)]
+        splitPhrases = deque([phrases[i:i + chunkSize] for i in range(0, len(phrases), chunkSize)])
         previousContext = None
 
         for phraseChunk in splitPhrases:
@@ -93,7 +95,7 @@ class TranslationOneShotChatGPT(TranslationInterface):
                     "content": translationPrompt
                 }],
                 store=False,
-                service_tier="flex",
+                service_tier=chatGPTServiceTier,
                 text_format=SubtitleFileTranslated
             )
             translatedLines = response.output_parsed.subtitleLines

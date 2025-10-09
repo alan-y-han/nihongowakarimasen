@@ -1,6 +1,6 @@
 # nihongo wakarimasen
 
-High quality translator for foreign language videos and audio, using Whisper and LLM translation. Geared especially towards Japanese to English translation for youtube videos, TV shows and radio.
+High quality translator for foreign language videos and audio, using Whisper and LLM translation. Geared especially towards Japanese to English translation for youtube videos, TV shows and radio, but should work for any language.
 
 Uses OpenAI APIs to perform speech to text transcription, and text to text translation.
 
@@ -25,7 +25,7 @@ This project is developed using PyCharm.
 
 ## Usage
 
-1. Specify video to translate in main.py and run (this will change to a proper CLI interface in the future)
+1. Specify video to translate in Config.py and run main.py (this will change to a proper CLI interface in the future)
 2. This will generate a .srt subtitle file, which you can open in your video player (e.g. VLC)
 
 ## How it works
@@ -34,7 +34,7 @@ Subtitle generation is done in 2 stages:
 1. Speech to text transcription, currently done using whisper. This can be locally or using OpenAI's API
 2. Text to text translation, currently using ChatGPT thanks to its high quality translations, wide knowledge base and ability to take user-provided context to improve translation further. Larger reasoning models (e.g. gpt-5) are also able to fix some text transcript errors, given the right prompting
 
-### Saving money
+### Reducing costs
 For whisper transcription, consider:
 - If you have a powerful GPU, running locally will reduce costs but produces worse transcriptions than OpenAI's whisper
 

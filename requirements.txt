@@ -4,3 +4,4 @@ pydantic
 whisperx
 pysrt
 pydub
+pycountry

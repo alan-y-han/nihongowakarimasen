@@ -2,7 +2,7 @@ import math
 from typing import List
 
 from TranscribedPhrase import TranscribedPhrase
-from logger import logger
+from Logger import logger
 
 
 def writeSubtitles(subtitleLines: List[TranscribedPhrase], filepath):

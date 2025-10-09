@@ -119,6 +119,7 @@ def chunkTranscription(transcription, timeOffsetSeconds):
 
     phraseBuffer = PhraseBuffer()
 
+    # TODO different languages have different punctuation, either swap delimiter characters or remove this feature entirely
     toBreakOn = {"。", "？", "?"}
 
     # filter out empty words

@@ -1,7 +1,6 @@
 import pickle
 
-from Config import fromLangCode, inputFile, outputFile, configWhisperPrompt, configTranslationContext, \
-    chatGPTServiceTier
+from Config import fromLangCode, inputFile, outputFile, configWhisperPrompt, configTranslationContext
 from TranslationOneShotChatGPT import TranslationOneShotChatGPT
 from ASRFromSrtFile import ASRFromSrtFile
 from ASROpenAIWhisper import ASROpenAIWhisper
@@ -21,7 +20,7 @@ if __name__ == '__main__':
     # phrases = ASRFromSrtFile().speechToText(outputFile + ".srt")
 
     ### text to text translation
-    TranslationOneShotChatGPT().translate(phrases, configTranslationContext, "gpt-5", chatGPTServiceTier)
+    TranslationOneShotChatGPT().translate(phrases, configTranslationContext, "gpt-5")
 
     ### write output to srt
     writeSubtitles(phrases, outputFile)

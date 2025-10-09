@@ -4,7 +4,7 @@ High quality translator for foreign language videos and audio, using Whisper and
 
 Uses OpenAI APIs to perform speech to text transcription, and text to text translation.
 
-Example output (for a fairly challenging radio show) - ["Mizuki Nana's Smile Gang" - 1226th Meeting](https://youtu.be/n8Vh4KrpgHU)
+Example output (for a fairly challenging radio show. Warning: loud) - ["Mizuki Nana's Smile Gang" - 1226th Meeting](https://youtu.be/n8Vh4KrpgHU)
 
 ## Installation
 

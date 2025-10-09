@@ -56,6 +56,24 @@ def generateSubsToTranslate(phrases):
     return uuidList, subsToTranslate
 
 
+def checkValidTranslation(expectedUuidList, actualUuidList):
+    # check number of lines in output matches input
+    if len(expectedUuidList) != len(actualUuidList):
+        logger.warn("Translation failed, received fewer lines than expected. "
+                    f"Input was {len(expectedUuidList)} lines but output was {len(actualUuidList)} lines. "
+                    f"Missing line(s): {set(expectedUuidList) - set(actualUuidList)}. "
+                    f"Extra line(s): {set(actualUuidList) - set(expectedUuidList)}")
+        return False
+    # check each line UUID matches the original and the ordering is the same
+    for expectedUuid, actualUuid in zip(expectedUuidList, actualUuidList):
+        if expectedUuid != actualUuid:
+            logger.warn("Translation failed, line UUID mismatch. "
+                        f"Input UUID is {expectedUuid} but output UUID is {actualUuid}")
+            return False
+
+    return True
+
+
 class TranslationOneShotChatGPT(TranslationInterface):
 
     def __init__(self):
@@ -77,8 +95,13 @@ class TranslationOneShotChatGPT(TranslationInterface):
         splitPhrases = deque([phrases[i:i + chunkSize] for i in range(0, len(phrases), chunkSize)])
         previousContext = None
 
-        for phraseChunk in splitPhrases:
-            uuidList, toTranslate = generateSubsToTranslate(phraseChunk)
+        retryCount = 0
+        maxRetries = 2
+
+        while len(splitPhrases):
+            phraseChunk = splitPhrases.popleft()
+
+            expectedUuidList, toTranslate = generateSubsToTranslate(phraseChunk)
             translationPrompt = generatePrompt(extraPrompts, toTranslate, previousContext)
 
             translationStartTime = datetime.now()
@@ -107,18 +130,16 @@ class TranslationOneShotChatGPT(TranslationInterface):
             logger.info(f"Token usage:\n{response.usage.model_dump_json(indent=2)}")
 
             # chatgpt doesn't always follow the prompt, so we must do error checking
-            # TODO: handle these errors
             actualUuidList = [line.uuid for line in translatedLines]
-            for i in range(len(uuidList)):
-                if i >= len(uuidList):
-                    raise Exception("Translation failed, received fewer lines than expected. "
-                                    f"Input was {len(phraseChunk)} lines but output was {len(translatedLines)} lines. "
-                                    f"Line [{uuidList[i]}] is missing")
-                expectedUuid = uuidList[i]
-                actualUuid = actualUuidList[i]
-                if expectedUuid != actualUuid:
-                    raise Exception("Translation failed, line UUID mismatch. "
-                                    f"Input UUID is {expectedUuid} but output UUID is {actualUuid}")
+            if not checkValidTranslation(expectedUuidList, actualUuidList):
+                if retryCount >= maxRetries:
+                    raise Exception("Ran out of retry attempts for translation, aborting")
+                splitPhrases.appendleft(phraseChunk)
+                retryCount += 1
+                logger.warn(f"Retrying translation, attempt {retryCount} out of {maxRetries}")
+                continue
+
+            retryCount = 0
 
             for i, (phrase, subtitleLine) in enumerate(zip(phraseChunk, translatedLines), 1):
                 phrase.translatedText = subtitleLine.translatedText

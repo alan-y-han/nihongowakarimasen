@@ -10,10 +10,10 @@ Example of translated subtitles - ["Mizuki Nana's Smile Gang" - 1226th Meeting](
 
 ### OpenAI API setup
 
-First you'll need to set up an OpenAPI account:
-1. Create an OpenAI account - https://platform.openai.com/
+First you'll need to set up an OpenAI Platform account:
+1. Create an account - https://platform.openai.com/
 2. Fund the account with credits (a few dollars is enough)
-3. Create an API key, and add it to your local computer
+3. Create an API key, and add it as an environment variable on your local computer
    - Follow the instructions here ("Create and export an API key") - https://platform.openai.com/docs/quickstart
 
 ### Python setup

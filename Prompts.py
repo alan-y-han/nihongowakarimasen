@@ -15,11 +15,11 @@ whisperPromptGenericKO = "안녕하세요, 오늘도 여러분의 하루를 함�
 
 translationStyle = "Try to preserve the original tone of voice and nuances of the words where possible. "
 translationContextClarisSeason3 = ("For context, "
-                      "クラリス (ClariS) are trio of singers comprising of クララ (Clara), エリイ (Elly), and アンナ (Anna). "
+                      "クラリス (ClariS) are a trio of singers comprising of クララ (Clara), エリイ (Elly), and アンナ (Anna). "
                       "One of their songs is 海月 (Umitsuki), also written as うみつき (Umitsuki). "
                       + translationStyle)
 translationContextClarisSeason2 = ("For context, "
-                      "クラリス (ClariS) are duo of singers comprising of クララ (Clara) and カレン (Karen). "
+                      "クラリス (ClariS) are a duo of singers comprising of クララ (Clara) and カレン (Karen). "
                       "They recently held live tours named ティンクトゥラ (Tinctura) and ヴィア・フォルトゥナ (Via Fortuna). "
                       + translationStyle)
 translationContextMizukiNana = ("For context, "

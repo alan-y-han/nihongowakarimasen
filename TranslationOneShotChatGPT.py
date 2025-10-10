@@ -15,7 +15,7 @@ def generatePrompt(extraPrompts, untranslatedSubs, previousContext):
     instructions = (
             f"You are an expert {fromLang} to {toLang} translator. "
             "You will be given lines from a subtitle file to translate. "
-            "The beginning of each line is marked with [uuid] where uuid is a unique ID for that line. "
+            "The beginning of each line is marked with [uuid] where uuid is an ID for that line. "
             "This marker should not be translated or included in the final translation. "
             "Do not add, remove or merge any subtitle lines. "
             "It is important that the uuid of the translated line matches the uuid of the original line. "
@@ -43,12 +43,21 @@ def generatePrompt(extraPrompts, untranslatedSubs, previousContext):
     toTranslate = f"The subtitle lines to translate are as follows:\n\n{untranslatedSubs}"
     output.append(toTranslate)
 
+    # TODO: add next phrases to the end so it knows the following context
+    # or simply chop off the end and re-translate it next loop
+
     return "\n\n".join(output)
 
 
+'''
+Generate a list of UUIDs for each subtitle line and concatenate it all into a
+long string to send to ChatGPT for translation.
+It seems UUIDs make ChatGPT less likely to merge or delete lines, vs using an
+ordered numbered list.
+'''
 def generateSubsToTranslate(phrases):
     toTranslateList = []
-    uuidList = [uuid.uuid4().hex[:8] for _ in phrases]
+    uuidList = [uuid.uuid4().hex[:4] for _ in phrases]
     for lineID, phrase in zip(uuidList, phrases):
         toTranslateList.append(f"[{lineID}] {phrase.text}")
     subsToTranslate = "\n".join(toTranslateList)

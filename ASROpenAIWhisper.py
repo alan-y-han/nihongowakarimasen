@@ -29,7 +29,7 @@ class ASROpenAIWhisper(ASRInterface):
             transcriptLines = chunkTranscription(rawTranscript, startTimeSeconds)
 
             if len(transcriptLines):
-                if endTimeSeconds - transcriptLines[-1].end > lineSplitTimeThreshold:
+                if endTimeSeconds - transcriptLines[-1].end > silenceTimeThreshold:
                     # audio didn't cut mid-sentence
                     transcriptAllLines.extend(transcriptLines)
 
@@ -91,8 +91,19 @@ def getTranscript(audioFile, prompt, language):
     )
 
 
-lineSplitTimeThreshold = 0.35 # any gaps longer than this will create a new subtitle line
+silenceTimeThreshold = 0.35 # any gaps longer than this will create a new subtitle line
+silenceTimeThresholdShort = 0.1 # when searching harder, any gaps longer than this will create a new subtitle line
+longWordTimeThreshold = 0.5 # when searching harder, any words longer than this will create a new subtitle line
+targetPhraseLength = 18 # english words, will start searching harder for gaps here
+maxPhraseLength = 28 # english words, will forcibly split the sentence here
 
+'''
+Chunking strategy - turning a stream of words into subtitle lines
+- Always break line on punctuation
+- If within target line length, break if silence is over threshold
+- If beyond target line length, break if silence is over short threshold, or if word is longer than threshold
+- If at max line length, forcibly break
+'''
 def chunkTranscription(transcription, timeOffsetSeconds):
     class PhraseBuffer:
         phrases = []
@@ -139,8 +150,17 @@ def chunkTranscription(transcription, timeOffsetSeconds):
                 phraseBuffer.flush()
                 continue
 
-            timeDifference = nextWord.start - word.end
-            if timeDifference > lineSplitTimeThreshold:
+            silenceTime = nextWord.start - word.end
+            currWordTime = word.end - word.start
+            if len(phraseBuffer.textBuffer) <= targetPhraseLength:
+                if silenceTime > silenceTimeThreshold:
+                    phraseBuffer.flush()
+                    continue
+            elif len(phraseBuffer.textBuffer) < maxPhraseLength:
+                if silenceTime > silenceTimeThresholdShort or currWordTime > longWordTimeThreshold:
+                    phraseBuffer.flush()
+                    continue
+            else:
                 phraseBuffer.flush()
                 continue
         else: # this is the last word

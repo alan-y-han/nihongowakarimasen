@@ -5,7 +5,7 @@ from datetime import datetime
 from openai import OpenAI
 from pydantic import BaseModel
 
-from Config import fromLang, toLang, chatGPTServiceTier
+from Config import fromLang, toLang, chatGPTServiceTier, chatGPTReasoningEffort
 from TranslationInterface import TranslationInterface
 from Logger import logger
 
@@ -13,12 +13,12 @@ from Logger import logger
 def generatePrompt(extraPrompts, untranslatedSubs, previousContext):
     # add instructions
     instructions = (
-            f"You are an expert {fromLang} to {toLang} translator. "
-            "You will be given lines from a subtitle file to translate. "
-            "The beginning of each line is marked with [uuid] where uuid is an ID for that line. "
-            "This marker should not be translated or included in the final translation. "
-            "Do not add, remove or merge any subtitle lines. "
-            "It is important that the uuid of the translated line matches the uuid of the original line. "
+            f"Translate the following subtitle lines from {fromLang} to {toLang}. "
+            f"In the output, every {toLang} line must have a corresponding {fromLang} line. "
+            "The [uuid] marker at the beginning of each line must not be translated or included in the translation. "
+            "You must not add, remove, merge or reorder any lines. "
+            "The total number of output lines must be the same as the input. "
+            "The uuid of the translated line must match the uuid of the original line. "
             "Do not summarise or produce any extra text aside from the translation. "
             "The subtitles come from a machine generated transcription. "
             "Each subtitle line may be a whole sentence or a section of a sentence. "
@@ -65,6 +65,17 @@ def generateSubsToTranslate(phrases):
     return uuidList, subsToTranslate
 
 
+def generatePreviousContextString(previousPhrases):
+    if not len(previousPhrases):
+        return ""
+
+    return (
+        "\n".join([phrase.text for phrase in previousPhrases])
+        + "\n\n"
+        + "\n".join([phrase.translatedText for phrase in previousPhrases])
+    )
+
+
 def checkValidTranslation(expectedUuidList, actualUuidList):
     # check number of lines in output matches input
     if len(expectedUuidList) != len(actualUuidList):
@@ -100,27 +111,25 @@ class TranslationOneShotChatGPT(TranslationInterface):
         class SubtitleFileTranslated(BaseModel):
             subtitleLines: list[SubtitleLineTranslated]
 
-        chunkSize = 200
+        # translating too many subtitles at once makes chatgpt more likely to not follow instructions
+        chunkSize = 100
         splitPhrases = deque([phrases[i:i + chunkSize] for i in range(0, len(phrases), chunkSize)])
-        previousContext = None
-
-        retryCount = 0
-        maxRetries = 2
+        previousPhrases = deque(maxlen=5)
 
         while len(splitPhrases):
             phraseChunk = splitPhrases.popleft()
 
             expectedUuidList, toTranslate = generateSubsToTranslate(phraseChunk)
-            translationPrompt = generatePrompt(extraPrompts, toTranslate, previousContext)
+            translationPrompt = generatePrompt(extraPrompts, toTranslate, generatePreviousContextString(previousPhrases))
 
             translationStartTime = datetime.now()
-            logger.info("--- Beginning section translation ---")
-            logger.info(f"Translation prompt:\n{translationPrompt}")
+            logger.info(f"--- Beginning translation of {len(phraseChunk)} lines ---")
+            logger.debug(f"Translation prompt:\n{translationPrompt}")
 
             response = self.client.responses.parse(
                 model=model,
                 reasoning={
-                    "effort": "low"
+                    "effort": chatGPTReasoningEffort
                 },
                 input=[{
                     "role": "user",
@@ -134,27 +143,31 @@ class TranslationOneShotChatGPT(TranslationInterface):
 
             translationTime = datetime.now() - translationStartTime
             subs = "\n".join([f"[{line.uuid}] {line.translatedText}" for line in translatedLines])
-            logger.info(f"Received translation:\n{subs}")
+            logger.info("Received translation")
+            logger.debug(f"Translation contents:\n{subs}")
             logger.info(f"Time taken: {translationTime}")
-            logger.info(f"Token usage:\n{response.usage.model_dump_json(indent=2)}")
+            logger.debug(f"Token usage:\n{response.usage.model_dump_json(indent=2)}")
 
             # chatgpt doesn't always follow the prompt, so we must do error checking
+            # if errors are detected, we keep halving the number of subtitle lines
+            # until we reach the base case of one line, which is virtually guaranteed to translate successfully
             actualUuidList = [line.uuid for line in translatedLines]
             if not checkValidTranslation(expectedUuidList, actualUuidList):
-                if retryCount >= maxRetries:
-                    raise Exception("Ran out of retry attempts for translation, aborting")
-                splitPhrases.appendleft(phraseChunk)
-                retryCount += 1
-                logger.warn(f"Retrying translation, attempt {retryCount} out of {maxRetries}")
-                continue
+                if len(phraseChunk) <= 1:
+                    logger.error(f"Could not translate {phraseChunk}")
+                    for phrase in phraseChunk:
+                        phrase.translatedText = "[translation error]"
+                    continue
 
-            retryCount = 0
+                pivot = len(phraseChunk) // 2
+                phraseHalf1 = phraseChunk[:pivot]
+                phraseHalf2 = phraseChunk[pivot:]
+                splitPhrases.appendleft(phraseHalf2)
+                splitPhrases.appendleft(phraseHalf1)
+
+                logger.warn(f"Retrying translation with {pivot} lines")
+                continue
 
             for i, (phrase, subtitleLine) in enumerate(zip(phraseChunk, translatedLines), 1):
                 phrase.translatedText = subtitleLine.translatedText
-
-            previousContext = (
-                    "\n".join([phrase.text for phrase in phraseChunk[-4:]])
-                    + "\n\n"
-                    + "\n".join([line.translatedText for line in translatedLines[-4:]])
-            )
+                previousPhrases.append(phrase)

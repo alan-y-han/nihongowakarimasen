@@ -33,7 +33,7 @@ def writeSubtitles(subtitleLines: List[TranscribedPhrase], filepath):
     outputFile.write(output)
     outputFile.close()
 
-    logger.info(output)
+    logger.debug(output)
 
 def genTimestamp(seconds):
     hours = math.floor(seconds / 3600)

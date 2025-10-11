@@ -11,6 +11,7 @@ from TranscribedPhrase import TranscribedPhrase
 
 class ASROpenAIWhisper(ASRInterface):
     def speechToText(self, filepath, prompt, language) -> List[TranscribedPhrase]:
+        logger.info("Beginning OpenAI Whisper speech to text transcription")
         audioBuffer = io.BytesIO()
         audioBuffer.name = "timetosimp.webm"  # dummy file name so openai doesn't throw errors
 
@@ -19,6 +20,7 @@ class ASROpenAIWhisper(ASRInterface):
         transcriptAllLines = []
 
         while not endOfFile:
+            logger.info("--- Beginning segment transcription ---")
             # clear the buffer to save memory
             audioBuffer.seek(0)
             audioBuffer.truncate(0)
@@ -94,12 +96,12 @@ def getTranscript(audioFile, prompt, language):
 silenceTimeThreshold = 0.35 # any gaps longer than this will create a new subtitle line
 silenceTimeThresholdShort = 0.1 # when searching harder, any gaps longer than this will create a new subtitle line
 longWordTimeThreshold = 0.5 # when searching harder, any words longer than this will create a new subtitle line
-targetPhraseLength = 18 # english words, will start searching harder for gaps here
-maxPhraseLength = 28 # english words, will forcibly split the sentence here
+targetPhraseLength = 22 # english words, will start searching harder for gaps here
+maxPhraseLength = 38 # english words, will forcibly split the sentence here
 
 '''
 Chunking strategy - turning a stream of words into subtitle lines
-- Always break line on punctuation
+- Always break line on end of sentence punctuation
 - If within target line length, break if silence is over threshold
 - If beyond target line length, break if silence is over short threshold, or if word is longer than threshold
 - If at max line length, forcibly break
@@ -167,7 +169,7 @@ def chunkTranscription(transcription, timeOffsetSeconds):
             phraseBuffer.flush()
 
     for phrase in phraseBuffer.phrases:
-        logger.info(f"[{phrase.start:.1f} - {phrase.end:.1f}] {phrase.text}")
-    logger.info("--- transcription segment end ---")
+        logger.debug(f"[{phrase.start:.1f} - {phrase.end:.1f}] {phrase.text}")
+    logger.info("Finished transcribing segment")
 
     return phraseBuffer.phrases

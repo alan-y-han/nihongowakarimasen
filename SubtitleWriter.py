@@ -6,6 +6,7 @@ from Logger import logger
 
 
 def writeSubtitles(subtitleLines: List[TranscribedPhrase], filepath):
+    logger.info("--- Writing subtitle file ---")
     extendTime = 0.2  # how long to extend each subtitle line by
 
     srtFile = []
@@ -29,11 +30,15 @@ def writeSubtitles(subtitleLines: List[TranscribedPhrase], filepath):
 
     output = "\n\n".join(srtFile)
 
-    outputFile = open(filepath + ".srt", "w", encoding="utf-8")
+    fullFilePath = filepath + ".srt"
+
+    outputFile = open(fullFilePath, "w", encoding="utf-8")
     outputFile.write(output)
     outputFile.close()
 
+    logger.info(f"Finished writing subtitles to {fullFilePath}")
     logger.debug(output)
+
 
 def genTimestamp(seconds):
     hours = math.floor(seconds / 3600)

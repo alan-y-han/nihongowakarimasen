@@ -96,8 +96,8 @@ def getTranscript(audioFile, prompt, language):
 silenceTimeThreshold = 0.35 # any gaps longer than this will create a new subtitle line
 silenceTimeThresholdShort = 0.1 # when searching harder, any gaps longer than this will create a new subtitle line
 longWordTimeThreshold = 0.5 # when searching harder, any words longer than this will create a new subtitle line
-targetPhraseLength = 22 # english words, will start searching harder for gaps here
-maxPhraseLength = 38 # english words, will forcibly split the sentence here
+targetPhraseLength = 30 # english words, will start searching harder for gaps after
+maxPhraseLength = 50 # english words, will forcibly split the sentence here
 
 '''
 Chunking strategy - turning a stream of words into subtitle lines

@@ -8,8 +8,8 @@ from SubtitleWriter import writeSubtitles
 
 if __name__ == '__main__':
     ### speech to text
-    phrases = ASROpenAIWhisper().speechToText(inputFile, configWhisperPrompt, fromLangCode)
     # save transcript to file so we don't have to waste credits re-transcribing it in the future
+    phrases = ASROpenAIWhisper().speechToText(inputFile, configWhisperPrompt, fromLangCode)
     with open(f"{outputFile}.pkl", "wb") as f:
         pickle.dump(phrases, f)
         f.close()

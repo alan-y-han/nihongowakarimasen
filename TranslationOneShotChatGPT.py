@@ -13,12 +13,15 @@ from Logger import logger
 def generatePrompt(extraPrompts, untranslatedSubs, previousContext):
     # add instructions
     instructions = (
-            f"Translate the following subtitle lines from {fromLang} to {toLang}. "
-            f"In the output, every {toLang} line must have a corresponding {fromLang} line. "
-            "The [uuid] marker at the beginning of each line must not be translated or included in the translation. "
-            "You must not add, remove, merge or reorder any lines. "
-            "The total number of output lines must be the same as the input. "
-            "The uuid of the translated line must match the uuid of the original line. "
+            f"You are an expert {fromLang} to {toLang} translator. "
+            "You will be given lines from a subtitle file to translate. "
+            f"For each line, translate it from {fromLang} to {toLang}. "
+            # f"In the output, every {toLang} line must have a corresponding {fromLang} line. "
+            "At the beginning of each line is a marker which looks like [uuid]. "
+            "This marker must not be translated or included in the translation. "
+            # "You must not add, remove or merge any lines. "
+            # "The total number of output lines must be the same as the input. "
+            # "The uuid of the translated line must match the uuid of the original line. "
             "Do not summarise or produce any extra text aside from the translation. "
             "The subtitles come from a machine generated transcription. "
             "Each subtitle line may be a whole sentence or a section of a sentence. "
@@ -79,7 +82,7 @@ def generatePreviousContextString(previousPhrases):
 def checkValidTranslation(expectedUuidList, actualUuidList):
     # check number of lines in output matches input
     if len(expectedUuidList) != len(actualUuidList):
-        logger.warn("Translation failed, received fewer lines than expected. "
+        logger.warn("Translation failed, different number of lines than expected. "
                     f"Input was {len(expectedUuidList)} lines but output was {len(actualUuidList)} lines. "
                     f"Missing line(s): {set(expectedUuidList) - set(actualUuidList)}. "
                     f"Extra line(s): {set(actualUuidList) - set(expectedUuidList)}")

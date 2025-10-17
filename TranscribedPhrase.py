@@ -8,3 +8,9 @@ class TranscribedPhrase:
     end: Optional[float] = None
     text: str = ""
     translatedText: str = ""
+
+@dataclass
+class Word:
+    start: float
+    end: float
+    text: str

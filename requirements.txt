@@ -5,3 +5,5 @@ whisperx
 pysrt
 pydub
 pycountry
+pyaudio
+speechmatics-rt

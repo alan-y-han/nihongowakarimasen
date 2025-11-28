@@ -1,4 +1,4 @@
-import uuid
+import textwrap
 from collections import deque
 from datetime import datetime
 
@@ -11,72 +11,112 @@ from Logger import logger
 
 
 def generatePrompt(extraPrompts, untranslatedSubs, previousContext):
-    # add instructions
-    instructions = (
-            f"You are an expert {fromLang} to {toLang} translator. "
-            "You will be given lines from a subtitle file to translate. "
-            f"For each line, translate it from {fromLang} to {toLang}. "
-            # f"In the output, every {toLang} line must have a corresponding {fromLang} line. "
-            "At the beginning of each line is a marker which looks like [uuid]. "
-            "This marker must not be translated or included in the translation. "
-            # "You must not add, remove or merge any lines. "
-            # "The total number of output lines must be the same as the input. "
-            # "The uuid of the translated line must match the uuid of the original line. "
-            "Do not summarise or produce any extra text aside from the translation. "
-            "The subtitles come from a machine generated transcription. "
-            "Each subtitle line may be a whole sentence or a section of a sentence. "
-            f"There may be some inaccuracies in the {fromLang} text. "
-            "If the sentence doesn't make sense, it is possible that some words were transcribed incorrectly, "
-            "so consider if other similar sounding words make sense. "
-            + extraPrompts
-    )
-    output = [instructions]
+    instructions = textwrap.dedent(
+        f"""\
+        You are a precise translator specializing in Japanese-to-English subtitle translation.
+        
+        Your task:
+        Translate the TARGET lines into English while using the MEMORY block for narrative continuity,
+        character consistency, tone, naming conventions, and handling ambiguous references.
+        
+        MEMORY (context block):
+        - The MEMORY block may contain zero or more previously translated subtitle pairs.
+        - If MEMORY is empty, treat the translation as the beginning of the scene and do NOT assume any prior context.
+        - When MEMORY is present, each item includes:
+            - "id": numeric line ID
+            - "ja": the original Japanese subtitle line
+            - "en": the previously translated English line
+        - MEMORY lines are NOT to be translated again.
+        - NEVER output, modify, or repeat MEMORY lines.
+        - MEMORY exists ONLY as contextual reference to maintain style, pronouns, tone, speaking manner,
+          and naming consistency.
+        - You may use MEMORY to infer consistent translation choices, but NEVER hallucinate details not
+          present in either MEMORY or TARGET.
+        
+        TARGET (lines to translate):
+        - Translate ONLY the lines inside the TARGET block.
+        - If the Japanese text is slightly wrong but clearly intended to be something recognizable, correct it silently and translate the intended meaning.
+        - Keep strict 1:1 alignment with IDs between target lines and their translations.
+        - Do NOT merge, split, omit, or add lines.
+        - Do NOT summarize.
+        - Preserve tone, emotion, and speaker intent.
+        - Output ONLY the structured JSON specified by the API (no explanations).
+        
+        General style rules:
+        - Use clear, natural English suitable for timed subtitles.
+        - Resolve pronouns consistently with MEMORY.
+        - If ambiguity exists even with MEMORY, choose a neutral faithful translation.
+        - Use English punctuation conventions.
+        
+        """)
 
-    # add context from previous translation segment
-    if previousContext:
-        context = (
-                "The preceding untranslated subtitle text and its translation are also provided here for context. "
-                "Use this to help with your translation. "
-                "Do not translate this part or include it in your response:\n\n"
-                + previousContext
-        )
-        output.append(context)
+    additionalContext = textwrap.dedent(
+f"""
+Additional translation context:
+{extraPrompts}
+""")
 
-    # finally add new subtitles to be translated
-    toTranslate = f"The subtitle lines to translate are as follows:\n\n{untranslatedSubs}"
-    output.append(toTranslate)
+    example = textwrap.dedent(
+        """\
+        Example:
+        
+        MEMORY:
+        [
+          { "id": 11, "ja": "本気でそんなことを言ってるの？", "en": "Do you seriously mean that?" },
+          { "id": 12, "ja": "嘘だと言ってよ。", "en": "Tell me it's a lie." }
+        ]
+        
+        TARGET:
+        {
+          "subtitle_lines": [
+            { "id": 13, "ja": "信じたくない。" },
+            { "id": 14, "ja": "でも前に進まなきゃ。" }
+          ]
+        }
+        
+        Expected output (structure only):
+        {
+          "subtitle_lines_translated": [
+            { "id": 13, "en": "I don't want to believe it." },
+            { "id": 14, "en": "But I have to keep moving forward." }
+          ]
+        }
+        
+        If id 14 was missing for example, this would be an incorrect output because a line from TARGET is missing.
+        You MUST ensure there are no missing lines.
+        
+        ---
+        
+        """)
+    memory = []
+    for i, phrase in enumerate(previousContext, start=1):
+        indent = "  "
+        line = f'\n{indent}{{ "id": {i}, "ja": "{phrase.text}", "en": "{phrase.translatedText}" }}'
+        memory.append(line)
+
+    jaLines = []
+    for i, phrase in enumerate(untranslatedSubs, start=len(memory) + 1):
+        indent = "    "
+        line = f'\n{indent}{{ "id": {i}, "ja": "{phrase.text}" }}'
+        jaLines.append(line)
+
+    data = textwrap.dedent(f"""\
+Now translate the following:
+MEMORY:
+[{",".join(memory)}
+]
+
+TARGET:
+{{
+  "subtitle_lines": [{",".join(jaLines)}
+  ]
+}}
+)""")
 
     # TODO: add next phrases to the end so it knows the following context
     # or simply chop off the end and re-translate it next loop
 
-    return "\n\n".join(output)
-
-
-'''
-Generate a list of UUIDs for each subtitle line and concatenate it all into a
-long string to send to ChatGPT for translation.
-It seems UUIDs make ChatGPT less likely to merge or delete lines, vs using an
-ordered numbered list.
-'''
-def generateSubsToTranslate(phrases):
-    toTranslateList = []
-    uuidList = [uuid.uuid4().hex[:4] for _ in phrases]
-    for lineID, phrase in zip(uuidList, phrases):
-        toTranslateList.append(f"[{lineID}] {phrase.text}")
-    subsToTranslate = "\n".join(toTranslateList)
-
-    return uuidList, subsToTranslate
-
-
-def generatePreviousContextString(previousPhrases):
-    if not len(previousPhrases):
-        return ""
-
-    return (
-        "\n".join([phrase.text for phrase in previousPhrases])
-        + "\n\n"
-        + "\n".join([phrase.translatedText for phrase in previousPhrases])
-    )
+    return instructions + additionalContext + example + data
 
 
 def checkValidTranslation(expectedUuidList, actualUuidList):
@@ -108,22 +148,21 @@ class TranslationOneShotChatGPT(TranslationInterface):
         logger.info(f"Beginning ChatGPT oneshot translation. Number of lines to be translated: {len(phrases)}")
 
         class SubtitleLineTranslated(BaseModel):
-            uuid: str
-            translatedText: str
+            id: str
+            en: str
 
         class SubtitleFileTranslated(BaseModel):
             subtitleLines: list[SubtitleLineTranslated]
 
         # translating too many subtitles at once makes chatgpt more likely to not follow instructions
-        chunkSize = 100
+        chunkSize = 200
         splitPhrases = deque([phrases[i:i + chunkSize] for i in range(0, len(phrases), chunkSize)])
         previousPhrases = deque(maxlen=5)
 
         while len(splitPhrases):
             phraseChunk = splitPhrases.popleft()
 
-            expectedUuidList, toTranslate = generateSubsToTranslate(phraseChunk)
-            translationPrompt = generatePrompt(extraPrompts, toTranslate, generatePreviousContextString(previousPhrases))
+            translationPrompt = generatePrompt(extraPrompts, phraseChunk, previousPhrases)
 
             translationStartTime = datetime.now()
             logger.info(f"--- Beginning translation of {len(phraseChunk)} lines ---")
@@ -145,7 +184,7 @@ class TranslationOneShotChatGPT(TranslationInterface):
             translatedLines = response.output_parsed.subtitleLines
 
             translationTime = datetime.now() - translationStartTime
-            subs = "\n".join([f"[{line.uuid}] {line.translatedText}" for line in translatedLines])
+            subs = "\n".join([f"[{line.id}] {line.en}" for line in translatedLines])
             logger.info("Received translation")
             logger.debug(f"Translation contents:\n{subs}")
             logger.info(f"Time taken: {translationTime}")
@@ -154,8 +193,8 @@ class TranslationOneShotChatGPT(TranslationInterface):
             # chatgpt doesn't always follow the prompt, so we must do error checking
             # if errors are detected, we keep halving the number of subtitle lines
             # until we reach the base case of one line, which is virtually guaranteed to translate successfully
-            actualUuidList = [line.uuid for line in translatedLines]
-            if not checkValidTranslation(expectedUuidList, actualUuidList):
+            actualUuidList = [line.id for line in translatedLines]
+            if not checkValidTranslation([str(n) for n in range(len(previousPhrases) + 1, len(previousPhrases) + len(phraseChunk) + 1)], actualUuidList):
                 if len(phraseChunk) <= 1:
                     logger.error(f"Could not translate {phraseChunk}")
                     for phrase in phraseChunk:
@@ -172,5 +211,5 @@ class TranslationOneShotChatGPT(TranslationInterface):
                 continue
 
             for i, (phrase, subtitleLine) in enumerate(zip(phraseChunk, translatedLines), 1):
-                phrase.translatedText = subtitleLine.translatedText
+                phrase.translatedText = subtitleLine.en
                 previousPhrases.append(phrase)

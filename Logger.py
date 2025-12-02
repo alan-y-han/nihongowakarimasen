@@ -7,4 +7,4 @@ logging.basicConfig(
     datefmt = "%H:%M:%S"
 )
 
-logger = logging.getLogger()
+logger = logging.getLogger("nihongowakarimasen")

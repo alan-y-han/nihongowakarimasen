@@ -22,6 +22,6 @@ outputFile = folder + file
 configWhisperPrompt = whisperPromptGenericJA
 configTranslationContext = translationContextClarisSeason3
 
-chatGPTServiceTier:ServiceTier = "default" # set to "flex" to save cost
-chatGPTModel:ResponsesModel = "gpt-5"
+chatGPTServiceTier:ServiceTier = "flex" # set to "flex" to save cost
+chatGPTModel:ResponsesModel = "gpt-5.1"
 chatGPTReasoningEffort = "low"

@@ -1,8 +1,9 @@
 from collections import deque
 from functools import reduce
 
+from AsyncUtils import serialSubscriber
 from MessageBus import MessageType
-from TranscribedPhrase import TranscribedPhrase
+from TranscribedPhrase import SubtitleChunk
 
 
 class SubtitleChunker:
@@ -10,8 +11,11 @@ class SubtitleChunker:
         self.bus = messageBus
         self.words = []
         self.bufferSize = 0
+        self.phraseId = 0
 
-        self.bus.subscribe(MessageType.ASR_FINAL)(self.onASRWord)
+        serialSubscriber(self.bus, MessageType.ASR_FINAL)(self.onASRWord)
+
+        # self.bus.subscribe(MessageType.ASR_FINAL)(self.onASRWord)
 
     async def onASRWord(self, data):
         # print(f"Received async message: {data}")
@@ -19,15 +23,17 @@ class SubtitleChunker:
         self.bufferSize += len(data.text)
 
         if self.shouldChunk():
-            phrase = TranscribedPhrase(
+            subtitleChunk = SubtitleChunk(
                 start=self.words[0].start,
                 end=self.words[-1].end,
-                text="".join([word.text for word in self.words])
+                text="".join([word.text for word in self.words]),
+                uuid=str(self.phraseId)
             )
-            self.bus.publish(MessageType.SUBTITLE_CHUNK, phrase)
-            # print(f"Chunker published {phrase.text}")
+            self.bus.publish(MessageType.SUBTITLE_CHUNK, subtitleChunk)
+            # print(f"Chunker published {subtitleChunk.text}")
             self.words = []
             self.bufferSize = 0
+            self.phraseId += 1
 
     def shouldChunk(self):
         """
@@ -43,10 +49,6 @@ class SubtitleChunker:
 
         delimiters = {"。", "？", "?"}
 
-        # return True
-
         return reduce(lambda acc, delimiter: acc or delimiter in self.words[-1].text, delimiters, False)
 
-        # if self.words[-1].text.contains()
-        #
-        # if self.bufferSize < 30:
+        # return True

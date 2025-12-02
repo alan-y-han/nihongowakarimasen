@@ -63,12 +63,12 @@ class ASROpenAIWhisper(ASRInterface):
         return transcriptAllLines
 
 
-def chunkAudio24MB(filepath, newFileBuffer, startTimeSeconds):
+def chunkAudio24MB(filepath, newFileBuffer, startTimeSeconds, customLength = 0):
     logger.info("Generating webm audio")
 
     audio = AudioSegment.from_file(filepath)
     bitrate = 256
-    chunkTimeSeconds = 24 * 8 * (1024 / bitrate) # create 24MB of audio
+    chunkTimeSeconds = 15 * 8 * (1024 / bitrate) # create 15MB of audio
     endTimeSeconds = startTimeSeconds + chunkTimeSeconds
 
     # PyDub handles time in milliseconds
@@ -82,7 +82,7 @@ def chunkAudio24MB(filepath, newFileBuffer, startTimeSeconds):
 
 
 def getTranscript(audioFile, prompt, language):
-    client = OpenAI()
+    client = OpenAI(max_retries=5, timeout=120)
     return client.audio.transcriptions.create(
         file=audioFile,
         language=language,
@@ -94,10 +94,11 @@ def getTranscript(audioFile, prompt, language):
 
 
 silenceTimeThreshold = 0.35 # any gaps longer than this will create a new subtitle line
+targetPhraseLength = 30 # words, will start searching harder for gaps after
+
 silenceTimeThresholdShort = 0.1 # when searching harder, any gaps longer than this will create a new subtitle line
 longWordTimeThreshold = 0.5 # when searching harder, any words longer than this will create a new subtitle line
-targetPhraseLength = 30 # english words, will start searching harder for gaps after
-maxPhraseLength = 50 # english words, will forcibly split the sentence here
+maxPhraseLength = 50 # words, will forcibly split the sentence here
 
 '''
 Chunking strategy - turning a stream of words into subtitle lines

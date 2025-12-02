@@ -14,10 +14,10 @@ whisperPromptGenericJA = "みなさん、おはようございます！今日も
 whisperPromptGenericKO = "안녕하세요, 오늘도 여러분의 하루를 함께하는 라디오 푸른하늘입니다.지금 시각은 오후 두 시를 막 지나고 있습니다.잠시 후에는 여러분의 사연과 함께하는 ‘마음의 소리’ 코너가 이어집니다.한 청취자분이 이런 말을 남기셨어요. “작은 위로가 큰 힘이 될 때가 있더라고요.”"
 
 translationStyle = "Try to preserve the original tone of voice and nuances of the words where possible. "
-translationContextClarisSeason3 = ("For context, "
-                      "クラリス (ClariS) are a trio of singers comprising of クララ (Clara), エリイ (Elly), and アンナ (Anna). "
-                      "One of their songs is 海月 (Umitsuki), also written as うみつき (Umitsuki). "
-                      + translationStyle)
+translationContextClarisSeason3 = (
+                      "- クラリス (ClariS) are a trio of singers comprising of クララ (Clara), エリイ (Elly) sometimes mis-transcribed as エリー, and アンナ (Anna). "
+                      "- They recently released a new song called 海月 (Umitsuki), also written as うみつき (Umitsuki). "
+                      "- Other recent songs are コネクト (Connect) and リンクス (Links).")
 translationContextClarisSeason2 = ("For context, "
                       "クラリス (ClariS) are a duo of singers comprising of クララ (Clara) and カレン (Karen). "
                       "They recently held live tours named ティンクトゥラ (Tinctura) and ヴィア・フォルトゥナ (Via Fortuna). "

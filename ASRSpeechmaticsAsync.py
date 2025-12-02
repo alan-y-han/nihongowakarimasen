@@ -42,11 +42,11 @@ class ASRSpeechmatics:
         async with AsyncClient() as client:
             # Register event handlers
             # @client.on(ServerMessageType.ADD_PARTIAL_TRANSCRIPT)
-            # def handlePartialTranscript(msg):
+            # def onPartialTranscript(msg):
             #     print(f"Partial: {msg['metadata']['transcript']}")
 
             @client.on(ServerMessageType.ADD_TRANSCRIPT)
-            def handle_final_transcript(msg):
+            def onFinalTranscript(msg):
                 # print(f"Final: {msg['metadata']['transcript']}")
                 results = msg["results"]
                 for result in results:

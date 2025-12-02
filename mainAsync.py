@@ -11,11 +11,12 @@ async def main():
     bus = MessageBus()
 
     asr = ASRSpeechmatics(bus)
+    # asr = ASRMock(bus)
     chunker = SubtitleChunker(bus)
-    # printer = SomePrinter(bus)
+    printer = SomePrinter(bus)
     translator = TranslationSingleLineChatGPT(bus)
 
-    await asr.run()
+    await asyncio.gather(asr.run(), printer.run())
 
 if __name__ == '__main__':
     asyncio.run(main())

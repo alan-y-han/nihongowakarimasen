@@ -137,15 +137,14 @@ def checkValidTranslation(expectedUuidList, actualUuidList):
     return True
 
 
-class TranslationOneShotChatGPT(TranslationInterface):
-
+class TranslationBatchChatGPT(TranslationInterface):
     def __init__(self):
         self.client = OpenAI(
             timeout=900.0
         )
 
-    def translate(self, phrases, extraPrompts="", model="gpt-5") -> None:
-        logger.info(f"Beginning ChatGPT oneshot translation. Number of lines to be translated: {len(phrases)}")
+    def translate(self, phrases, extraPrompts="", model="gpt-5-nano") -> None:
+        logger.info(f"Beginning ChatGPT batch translation. Number of lines to be translated: {len(phrases)}")
 
         class SubtitleLineTranslated(BaseModel):
             id: str

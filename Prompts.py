@@ -13,20 +13,23 @@
 whisperPromptGenericJA = "みなさん、おはようございます！今日もラジオを聴いてくれてありがとうございます。今日の天気は晴れ、気持ちのいい一日になりそうですね。リスナーさんから「最近おすすめの本はありますか？」という質問が届いています。"
 whisperPromptGenericKO = "안녕하세요, 오늘도 여러분의 하루를 함께하는 라디오 푸른하늘입니다.지금 시각은 오후 두 시를 막 지나고 있습니다.잠시 후에는 여러분의 사연과 함께하는 ‘마음의 소리’ 코너가 이어집니다.한 청취자분이 이런 말을 남기셨어요. “작은 위로가 큰 힘이 될 때가 있더라고요.”"
 
-translationStyle = "Try to preserve the original tone of voice and nuances of the words where possible. "
 translationContextClarisSeason3 = (
-                      "- クラリス (ClariS) are a trio of singers comprising of クララ (Clara), エリイ (Elly) sometimes mis-transcribed as エリー, and アンナ (Anna). "
-                      "- They recently released a new song called 海月 (Umitsuki), also written as うみつき (Umitsuki). "
-                      "- Other recent songs are コネクト (Connect) and リンクス (Links).")
-translationContextClarisSeason2 = ("For context, "
-                      "クラリス (ClariS) are a duo of singers comprising of クララ (Clara) and カレン (Karen). "
-                      "They recently held live tours named ティンクトゥラ (Tinctura) and ヴィア・フォルトゥナ (Via Fortuna). "
-                      + translationStyle)
-translationContextMizukiNana = ("For context, "
-                      "水樹 奈々 (みずき なな) (Mizuki Nana) is a J-pop singer. "
-                      "She hosts a radio show called スマイルギャング (Smile Gang, sometimes abbreviated to スマギャン) with 福圓 美里 (ふくえん みさと) (Misato Fukuen). "
-                      + translationStyle)
-translationContextBlueArchive = ("For context, "
-                                 "This is a live broadcast about the game Blue Archive. "
-                                 + translationStyle)
+    "- クラリス (ClariS) are a trio of singers comprising of Clara (クララ), Anna (アンナ), and Elly (エリ, sometimes mis-transcribed as エリー or エリイ)."
+    # "- They recently released a new song called 海月 (Umitsuki), also written as うみつき (Umitsuki)."
+    # "- Other recent songs are コネクト (Connect) and リンクス (Links)."
+)
+translationContextClarisSeason2 = (
+    "- クラリス (ClariS) are a duo of singers comprising of クララ (Clara) and カレン (Karen)."
+    "- They recently held live tours named ティンクトゥラ (Tinctura) and ヴィア・フォルトゥナ (Via Fortuna)."
+)
+translationContextMizukiNana = (
+    "- 水樹 奈々 (みずき なな) (Mizuki Nana) is a J-pop singer."
+    "- She hosts a radio show called スマイルギャング (Smile Gang, sometimes abbreviated to スマギャン) with 福圓 美里 (ふくえん みさと) (Misato Fukuen)."
+)
+translationContextBlueArchive = (
+    "- This is a live broadcast about the game Blue Archive."
+)
+translationContextAimi = (
+    "- This is a video from Aimi (愛美 read あいみ)."
+)
 # translationContext = "For context, バンドリ (bandori) is the abbreviation for the BanG Dream! franchise."

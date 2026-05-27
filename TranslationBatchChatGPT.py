@@ -140,7 +140,8 @@ def checkValidTranslation(expectedUuidList, actualUuidList):
 class TranslationBatchChatGPT(TranslationInterface):
     def __init__(self):
         self.client = OpenAI(
-            timeout=900.0
+            timeout=900.0,
+            max_retries=50
         )
 
     def translate(self, phrases, extraPrompts="", model="gpt-5-nano") -> None:

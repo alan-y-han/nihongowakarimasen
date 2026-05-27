@@ -1,10 +1,11 @@
 import asyncio
 
+from ASRMockAsync import ASRMock
 from ASRSpeechmaticsAsync import ASRSpeechmatics
 from MessageBus import MessageBus
 from SomePrinter import SomePrinter
 from SubtitleChunkerAsync import SubtitleChunker
-from TranslationSingleLineChatGPTAsync import TranslationSingleLineChatGPT
+from TranslationBatchChatGPTAsync import TranslationBatchChatGPT
 
 
 async def main():
@@ -14,7 +15,7 @@ async def main():
     # asr = ASRMock(bus)
     chunker = SubtitleChunker(bus)
     printer = SomePrinter(bus)
-    translator = TranslationSingleLineChatGPT(bus)
+    translator = TranslationBatchChatGPT(bus)
 
     await asyncio.gather(asr.run(), printer.run())
 

@@ -15,8 +15,9 @@ whisperPromptGenericKO = "안녕하세요, 오늘도 여러분의 하루를 함�
 
 translationContextClarisSeason3 = (
     "- クラリス (ClariS) are a trio of singers comprising of Clara (クララ), Anna (アンナ), and Elly (エリ, sometimes mis-transcribed as エリー or エリイ)."
-    # "- They recently released a new song called 海月 (Umitsuki), also written as うみつき (Umitsuki)."
-    # "- Other recent songs are コネクト (Connect) and リンクス (Links)."
+    "- The transcript comes from a ClariS livestream."
+    "- They recently released a new song called Revive."
+    "- Other recent songs are コネクト (Connect), リンクス (Links) and 海月 (Umitsuki), also written as うみつき (Umitsuki).."
 )
 translationContextClarisSeason2 = (
     "- クラリス (ClariS) are a duo of singers comprising of クララ (Clara) and カレン (Karen)."

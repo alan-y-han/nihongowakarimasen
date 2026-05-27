@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Optional
@@ -21,13 +22,15 @@ class SomePrinter:
     def __init__(self, messageBus):
         self.bus = messageBus
         self.messageHistory = OrderedDict()
-        self.maxHistorySize = 20
+        self.maxHistorySize = 25
         self.latestJpTextDelta = ""
         self.renderEvent = asyncio.Event()
         serialSubscriber(self.bus, MessageType.ASR_FINAL)(self.onUntranslatedDelta)
         serialSubscriber(self.bus, MessageType.SUBTITLE_CHUNK)(self.onUntranslatedFinal)
         serialSubscriber(self.bus, MessageType.TRANSLATED_PHRASE_DELTA)(self.onTranslatedDelta)
         serialSubscriber(self.bus, MessageType.TRANSLATED_PHRASE_FINAL)(self.onTranslatedFinal)
+
+        logging.getLogger("httpx").setLevel(logging.WARNING)
 
     async def onUntranslatedDelta(self, data):
         self.latestJpTextDelta += data.text
@@ -53,9 +56,9 @@ class SomePrinter:
 
     def render(self):
         if self.latestJpTextDelta:
-            maxLength = 9
+            maxLength = 14
         else:
-            maxLength = 10
+            maxLength = 15
 
         output = []
         for uuid, msg in list(self.messageHistory.items())[-maxLength:]:
